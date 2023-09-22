@@ -3,6 +3,7 @@
 ## Requirements
 - [Conan](https://conan.io/)
 - [CMake](https://cmake.org/)
+- [GCC](https://gcc.gnu.org/) or [Clang](https://clang.llvm.org/)
 
 ## Building
 1. Clone the repository
