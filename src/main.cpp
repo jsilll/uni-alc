@@ -2,6 +2,31 @@
 
 #include <minisat/core/Solver.h>
 
+void CardEnc(Minisat::Solver solver, std::vector<Minisat::Var> &lits, std::int32_t k, bool ge){
+  using Minisat::mkLit;
+  std::vector<Minisat::Var> auxilary_vars(lits.size());
+
+  std::cout << k << ge << std::endl;
+
+  for (std::size_t i = 0; i < lits.size(); ++i) {
+    auxilary_vars[i] = solver.newVar();
+  }
+
+  solver.addClause(~mkLit(lits[0]),~mkLit(auxilary_vars[0]));
+
+  for (std::size_t i = 1; i < lits.size(); ++i) {
+    solver.addClause(~mkLit(lits[i]),~mkLit(auxilary_vars[i])); // ~xi v ~Si 1,..,n 
+    solver.addClause(~mkLit(auxilary_vars[i-1]),mkLit(auxilary_vars[i])); // ~Si-1 v Si 1,..,n
+    
+  
+  }
+  for(std::size_t i = 0; i < lits.size()-1; ++i){
+    solver.addClause(~mkLit(lits[i]),mkLit(auxilary_vars[i-1])); // ~xi-1 v Si-1 1,..,n-1
+  }
+
+  std::cout << solver.toString() ; 
+}
+
 void Solve(const apr::Input &in) {
   std::int32_t n_switches = in.stages.size();
   std::int32_t n_groups = in.required.size();
