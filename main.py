@@ -15,6 +15,15 @@ class Input:
         self.capacity = [] # m 
         self.dependencies = [] # d - number of dependencies
 
+    def __repr__(self) -> str:
+        return self.__str__()
+
+    def __str__(self) -> str:
+        # print each atributte one by one
+        return f"\t\tInput Info:\nRequired: {self.required}\nStages: \
+            {self.stages}\nCapacity: {self.capacity}\nDependencies: \
+                {self.dependencies}\n\n"
+
 def parse(text: TextIO) -> Input:
     n = int(text.readline().strip())
     if n <= 1:
@@ -41,9 +50,9 @@ def parse(text: TextIO) -> Input:
     return inp
     
 def solve(input:Input) -> None:
-
+    print(input)
     vpool = IDPool()
-    solver = Glucose3(vpool=vpool)
+    solver = Glucose3()
     n_switches = len(input.stages)
     n_groups = len(input.required)
 
@@ -72,7 +81,7 @@ def solve(input:Input) -> None:
             solver.add_clause(clause)
 
     ## each group of rules can only be placed once (=1)
-    for group in n_groups:
+    for group in range(n_groups):
         lits = [ gr[i][j][group] for i in range(n_switches) for j in range(input.stages[i]) ]
         enc = CardEnc.equals(lits, 1, vpool=vpool)
 
@@ -82,18 +91,18 @@ def solve(input:Input) -> None:
 
   ## The memory requirements of all groups of rules in each stage of the switch
   ## is not higher than its capacity;
-  ## TODO: cardinality constraint (sum of groups in each stage <= capacity)
+  ## a + a + a + a + a + b + b + b + c + c <= k
 
     for switch in range(n_switches):
         for stage in range(input.stages[switch]):
-            lits = [ [gr[switch][stage][group]] * input.required[group] \
-                     for group in range(n_groups) ]
+            lits = sum([ [gr[switch][stage][group]] * input.required[group] \
+                     for group in range(n_groups) ],[]) # flatten list
+            
             enc = CardEnc.atmost(lits, input.capacity[switch], vpool=vpool)
 
             for clause in enc.clauses:
                 solver.add_clause(clause)
-  ## a + a + a + a + a + b + b + b + c + c <= k
-  ## CardEnc(solver, std::vector<Minisat::Var> &lits, std::int32_t k, bool ge)
+ 
   
 
   ## For each (i, j) ∈ D, then group j cannot be placed into a switch that
