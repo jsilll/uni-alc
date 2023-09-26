@@ -1,7 +1,3 @@
 # IDEs
 .idea/
 .vscode/
-
-# Build
-build/
-CMakeUserPresets.json
