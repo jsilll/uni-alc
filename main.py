@@ -6,206 +6,185 @@ from pysat.card import CardEnc
 from pysat.examples.rc2 import RC2
 from pysat.formula import WCNF, IDPool
 
-class Input:
-    def __init__(self) -> None:
-        # List of size N
-        # N is the number of groups of rules
-        self.required: list[int] = list()
-        # List of size M
-        # M is the number of switches
-        self.stages: list[int] = list()
-        # List of size M
-        # M is the number of switches
-        self.capacity: list[int] = list()
-        # List of size D
-        # D is the number of dependencies
-        self.dependencies: list[tuple[int, int]] = list()
 
-def parse(file: TextIO) -> Input:
+def parse(file: TextIO):
     N = int(file.readline().strip())
     if N <= 1:
         raise ValueError("Number of groups of rules must be greater than 1")
-
     M = int(file.readline().strip())
     if M < 1:
         raise ValueError("Number of switches must be positive")
-
-    inp = Input()
-
-    inp.required = list(map(int, file.readline().split()))
-    inp.stages = list(map(int, file.readline().split()))
-    inp.capacity = list(map(int, file.readline().split()))
-
+    required = list(map(int, file.readline().split()))
+    stages = list(map(int, file.readline().split()))
+    capacity = list(map(int, file.readline().split()))
     D = int(file.readline().strip())
     if D < 0:
         raise ValueError("Number of groups of rules must be positive")
-
+    dependencies = list()
     for _ in range(D):
         i, j = map(int, file.readline().split())
-        inp.dependencies.append((i - 1, j - 1))
+        dependencies.append((i - 1, j - 1))
+    return required, stages, capacity, dependencies
 
-    return inp
 
-class Solution:
-    def __init__(self) -> None:
-        # Number of re-circulations
-        self.cost: int = 0
-        # Switch order
-        self.switches: list[int] = list()
-        # Group order for each switch
-        self.groups: list[list[list[int]]] = list()
+def solve(required, stages, capacities, dependencies):
+    N_SWITCHES = len(stages)
+    N_GROUPS = len(required)
 
-def solve(input: Input):
-    # Number of switches
-    M = len(input.stages)
-    # Number of groups of rules
-    N = len(input.required)
-
-    # -- Variable Pool --
     vpool = IDPool()
-
-    # -- Variables --
-    SW = "Switch {} in position {}"
-    sw = [[vpool.id(SW.format(i + 1, j + 1)) for j in range(M)] for i in range(M)]
-
-    GR = "Switch {} in stage {} has group {}"
-    gr = [
-        [
-            [vpool.id(GR.format(i + 1, j + 1, k + 1)) for k in range(N)]
-            for j in range(input.stages[i])
-        ]
-        for i in range(M)
-    ]
-
-    BESW = "Switch {} is behind switch {}"
-    besw = [[vpool.id(BESW.format(i + 1, j + 1)) for j in range(M)] for i in range(M)]
-
-    BEGR = "Group {} is behind group {}"
-    begr = [[vpool.id(BEGR.format(i + 1, j + 1)) for j in range(N)] for i in range(N)]
-
-    # -- Solver --
     solver = RC2(WCNF())
 
-    # -- Consistency --
-    # SW and GRSW relation
-    for s1 in range(M):
-        for s2 in range(M):
+    sw = [
+        [
+            vpool.id("Switch {} in position {}".format(i + 1, j + 1))
+            for j in range(N_SWITCHES)
+        ]
+        for i in range(N_SWITCHES)
+    ]
+    gr = [
+        [
+            [
+                vpool.id(
+                    "Switch {} in stage {} has group {}".format(i + 1, j + 1, k + 1)
+                )
+                for k in range(N_GROUPS)
+            ]
+            for j in range(stages[i])
+        ]
+        for i in range(N_SWITCHES)
+    ]
+    besw = [
+        [
+            vpool.id("Switch {} is behind switch {}".format(i + 1, j + 1))
+            for j in range(N_SWITCHES)
+        ]
+        for i in range(N_SWITCHES)
+    ]
+    begr = [
+        [
+            vpool.id("Group {} is behind group {}".format(i + 1, j + 1))
+            for j in range(N_GROUPS)
+        ]
+        for i in range(N_GROUPS)
+    ]
+
+    # Relation sw <-> besw
+    for s1 in range(N_SWITCHES):
+        for s2 in range(N_SWITCHES):
             if s1 == s2:
                 solver.add_clause([-besw[s1][s2]])
             else:
-                for p1 in range(M):
-                    for p2 in range(p1 + 1, M):
-                        solver.add_clause([-sw[s1][p1], -sw[s2][p2], besw[p1][p2]])
-    # GR and BEGR relation
-    for g1 in range(N):
-        for g2 in range(N):
+                for p1 in range(N_SWITCHES):
+                    for p2 in range(p1 + 1, N_SWITCHES):
+                        solver.add_clause([-sw[s1][p1], -sw[s2][p2], besw[s1][s2]])
+    # Relation gr <-> begr
+    for g1 in range(N_GROUPS):
+        for g2 in range(N_GROUPS):
             if g1 == g2:
                 solver.add_clause([-begr[g1][g2]])
             else:
-                for s in range(M):
-                    for st1 in range(input.stages[s]):
-                        for st2 in range(st1, input.stages[s]):
+                for s in range(N_SWITCHES):
+                    for st1 in range(stages[s]):
+                        for st2 in range(st1, stages[s]):
                             solver.add_clause(
                                 [-gr[s][st1][g1], -gr[s][st2][g2], begr[g1][g2]]
                             )
-
-    # -- Constraints --
-    # Each switch can only be in one position (=1)
+    # Each switch is in exactly one position
     for lits in sw:
-        for clause in CardEnc.equals(lits, 1, vpool=vpool).clauses:
+        for clause in CardEnc.equals(lits, vpool=vpool).clauses:
             solver.add_clause(clause)
-    # Each group of rules can only be placed once (=1)
-    for group in range(N):
-        lits = [gr[i][j][group] for i in range(M) for j in range(input.stages[i])]
-        print("CardEnc for group {} with lits {}".format(group, lits))
-        for clause in CardEnc.equals(lits, 1, vpool=vpool).clauses:
+    # Only one switch per position
+    for pos in range(N_SWITCHES):
+        for s1 in range(N_SWITCHES):
+            for s2 in range(s1 + 1, N_SWITCHES):
+                solver.add_clause([-sw[s1][pos], -sw[s2][pos]])
+    # Each group is in exactly one stage out of all switches
+    for group in range(N_GROUPS):
+        lits = [gr[i][j][group] for i in range(N_SWITCHES) for j in range(stages[i])]
+        for clause in CardEnc.equals(lits, vpool=vpool).clauses:
             solver.add_clause(clause)
-    # The memory requirements of all groups of rules in
-    # each stage of the switch is not higher than its capacity;
-    for switch in range(M):
-        for stage in range(input.stages[switch]):
+    # The memory capacity of each switch stage is not exceeded
+    for switch in range(N_SWITCHES):
+        for stage in range(stages[switch]):
             lits = sum(
                 [
-                    [gr[switch][stage][group]] * input.required[group]
-                    for group in range(N)
+                    [gr[switch][stage][group]] * required[group]
+                    for group in range(N_GROUPS)
                 ],
                 [],
             )
-            for clause in CardEnc.atmost(
-                lits, input.capacity[switch], vpool=vpool
-            ).clauses:
+            for clause in CardEnc.atmost(lits, capacities[switch], vpool=vpool).clauses:
                 solver.add_clause(clause)
-    # For each (i, j) in D, then group j cannot be placed into a
-    # switch that occurs before the switch where group i is placed
-    for g1, g2 in input.dependencies:
-        for s1 in range(M):
-            for s2 in range(s1):
-                for j1 in range(input.stages[s1]):
-                    for j2 in range(input.stages[s2]):
+    # For each dependency (i, j), then group j cannot be placed into a switch before the switch where group i is placed
+    for g1, g2 in dependencies:
+        for s1 in range(N_SWITCHES):
+            for s2 in range(s1 + 1, N_SWITCHES):
+                for st1 in range(stages[s1]):
+                    for st2 in range(stages[s2]):
                         solver.add_clause(
-                            [-besw[s1][s2], -gr[s1][j1][g2], -gr[s2][j2][g1]]
+                            # (g1, g2) => s1 is behind s2 /\ g1 in s2 => g2 not in s1
+                            [-besw[s1][s2], -gr[s2][st2][g1], -gr[s1][st1][g2]]
                         )
-    # For every dependency (g1, g2) in D if g1 is placed in the same
-    # switch as g2 and g1 is placed in a stage before or equal
-    # to g2's stage, then there's a re-circulation. Minimize the
-    # overall number of re-circulations
-    for g1, g2 in input.dependencies:
+                        solver.add_clause(
+                            # (g1, g2) => s2 is behind s1 /\ g1 in s1 => g2 not in s2
+                            [-besw[s2][s1], -gr[s1][st1][g1], -gr[s2][st2][g2]]
+                        )
+    # Minimize the overall number of re-circulations
+    for g1, g2 in dependencies:
         solver.add_clause([-begr[g2][g1]], weight=1)
 
-    # -- Solve --
     model = solver.compute()
     if model is None:
-        return None
+        return -1, [], []
 
-    # -- Debug --
-    for var in range(1, vpool.top + 1):
-        obj = vpool.obj(var)
-        if obj != None:
-            if model[var] > 0:
-                print(obj)
-            else:
-                print(f"-{obj}")
+    # TODO: Remove
+    # for i in range(1, vpool.top):
+    #     obj = vpool.obj(i)
+    #     if obj is not None:
+    #         if model[i - 1] > 0:
+    #             print(f"{obj} = {model[i - 1]}")
+    #         else:
+    #             print(f"{obj} = {model[i - 1]} (negated)")
+    # print(list(map(lambda x: (x[0] + 1, x[1] + 1), dependencies)))
+    # print(capacities)
+    # print(required)
 
-    # -- Build Solution --
-    solution = Solution()
-    solution.cost = solver.cost
-    # Switch order
-    solution.switches = [0] * M
-    for s in range(M):
-        for p in range(M):
-            if model[sw[s][p]] > 0:
-                solution.switches[p] = s + 1
+    switches = [0] * N_SWITCHES
+    for s1 in range(N_SWITCHES):
+        for s2 in range(N_SWITCHES):
+            if model[sw[s1][s2] - 1] > 0:
+                switches[s2] = s1 + 1
                 break
-    # Group order for each switch
-    solution.groups = [[[]] * input.stages[s] for s in range(M)]
-    for s in range(M):
-        for st in range(input.stages[s]):
-            for g in range(N):
-                if model[gr[s][st][g]] > 0:
-                    solution.groups[s][st].append(g + 1)
-                    break
+    all_groups = list()
+    for s1 in range(N_SWITCHES):
+        groups = list()
+        for st in range(stages[s1]):
+            stage_groups = list()
+            for g in range(N_GROUPS):  # TODO: Slow, use set
+                if model[gr[s1][st][g] - 1] > 0:
+                    stage_groups.append(g + 1)
+            groups.append(stage_groups)
+        all_groups.append(groups)
 
-    return solution
+    return solver.cost, switches, all_groups
 
 
-def output(file: TextIO, solution: Solution) -> None:
-    file.write(f"{solution.cost}\n")
-    file.write(" ".join(map(str, solution.switches)))
-    file.write("\n")
-    for groups in solution.groups:
-        file.write(", ".join(map(lambda g: " ".join(map(str, g)), groups)))
-        file.write("\n")
+def output(file: TextIO, cost, switches, groups):
+    if cost == -1:
+        file.write("No solution\n")
+    else:
+        file.write(f"{cost}\n")
+        file.write(" ".join(map(str, switches)) + "\n")
+        for group in groups:
+            file.write(", ".join(map(lambda g: " ".join(map(str, g)), group)))
+            file.write("\n")
 
 
 if __name__ == "__main__":
     import sys
 
     try:
-        solution = solve(parse(sys.stdin))
-        if solution:
-            output(sys.stdout, solution)
-        else:
-            print("No solution found", file=sys.stderr)
+        output(sys.stdout, *solve(*parse(sys.stdin)))
     except ValueError as e:
-        print(e, file=sys.stderr)
+        sys.stderr.write(f"Error: {e}\n")
         sys.exit(1)
