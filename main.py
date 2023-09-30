@@ -174,7 +174,7 @@ def output(file: TextIO, cost, switches, groups):
         file.write("No solution\n")
     else:
         file.write(f"{cost}\n")
-        file.write(" ".join(map(str, switches)) + "\n")
+        file.write(" ".join(map(str, switches)) + " \n")
         for group in groups:
             file.write(", ".join(map(lambda g: " ".join(map(str, g)), group)))
             file.write("\n")
