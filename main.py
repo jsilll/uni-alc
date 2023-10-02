@@ -1,4 +1,6 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
+# alc23 - 2 - project1 
+# DO NOT remove or edit the lines above. Thank you.
 
 from typing import TextIO
 
