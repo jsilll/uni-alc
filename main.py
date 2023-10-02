@@ -2,9 +2,10 @@
 
 from typing import TextIO
 
-from pysat.card import CardEnc
 from pysat.examples.rc2 import RC2
 from pysat.formula import WCNF, IDPool
+from pysat.pb import PBEnc, EncType as PBEncType
+from pysat.card import CardEnc, EncType as CardEncType
 
 
 def parse(file: TextIO):
@@ -32,7 +33,7 @@ def solve(required, stages, capacities, dependencies):
     N_GROUPS = len(required)
 
     vpool = IDPool()
-    solver = RC2(WCNF())
+    solver = RC2(WCNF(), solver='g3')
 
     sw = [
         [
@@ -72,7 +73,7 @@ def solve(required, stages, capacities, dependencies):
     for s1 in range(N_SWITCHES):
         for s2 in range(N_SWITCHES):
             if s1 == s2:
-                solver.add_clause([-besw[s1][s2]])
+                continue
             else:
                 for p1 in range(N_SWITCHES):
                     for p2 in range(p1 + 1, N_SWITCHES):
@@ -81,7 +82,7 @@ def solve(required, stages, capacities, dependencies):
     for g1 in range(N_GROUPS):
         for g2 in range(N_GROUPS):
             if g1 == g2:
-                solver.add_clause([-begr[g1][g2]])
+                continue
             else:
                 for s in range(N_SWITCHES):
                     for st1 in range(stages[s]):
@@ -91,7 +92,7 @@ def solve(required, stages, capacities, dependencies):
                             )
     # Each switch is in exactly one position
     for lits in sw:
-        for clause in CardEnc.equals(lits, vpool=vpool).clauses:
+        for clause in CardEnc.equals(lits, vpool=vpool, encoding=CardEncType.seqcounter).clauses:
             solver.add_clause(clause)
     # Only one switch per position
     for pos in range(N_SWITCHES):
@@ -101,19 +102,14 @@ def solve(required, stages, capacities, dependencies):
     # Each group is in exactly one stage out of all switches
     for group in range(N_GROUPS):
         lits = [gr[i][j][group] for i in range(N_SWITCHES) for j in range(stages[i])]
-        for clause in CardEnc.equals(lits, vpool=vpool).clauses:
+        for clause in CardEnc.equals(lits, vpool=vpool, encoding=CardEncType.seqcounter).clauses:
             solver.add_clause(clause)
     # The memory capacity of each switch stage is not exceeded
     for switch in range(N_SWITCHES):
         for stage in range(stages[switch]):
-            lits = sum(
-                [
-                    [gr[switch][stage][group]] * required[group]
-                    for group in range(N_GROUPS)
-                ],
-                [],
-            )
-            for clause in CardEnc.atmost(lits, capacities[switch], vpool=vpool).clauses:
+            weights = [required[group] for group in range(N_GROUPS)]
+            lits = [gr[switch][stage][group] for group in range(N_GROUPS)]
+            for clause in PBEnc.atmost(lits, weights, capacities[switch], vpool=vpool, encoding=PBEncType.bdd).clauses:
                 solver.add_clause(clause)
     # For each dependency (i, j), then group j cannot be placed into a switch before the switch where group i is placed
     for g1, g2 in dependencies:
@@ -134,6 +130,7 @@ def solve(required, stages, capacities, dependencies):
         solver.add_clause([-begr[g2][g1]], weight=1)
 
     model = solver.compute()
+
     if model is None:
         return -1, [], []
 
@@ -160,7 +157,7 @@ def solve(required, stages, capacities, dependencies):
         groups = list()
         for st in range(stages[s1]):
             stage_groups = list()
-            for g in range(N_GROUPS):  # TODO: Slow, use set
+            for g in range(N_GROUPS):
                 if model[gr[s1][st][g] - 1] > 0:
                     stage_groups.append(g + 1)
             groups.append(stage_groups)
