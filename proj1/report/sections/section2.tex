@@ -1,6 +1,10 @@
-The fundamental challenge addressed in this project revolves around the efficient allocation of groups of rules within a network comprising multiple switches. Let \(G\) represent a set of groups of rules, where \(R_i\) denotes the memory requirements of group \(i \in G\). Additionally, \(D\) defines dependencies between groups, signifying that group \(j\) relies on group \(i\) if there exists at least one rule in group \(i\) capable of forwarding network packets to \(j\). The network also includes a set of switches \(S\), where each switch \(s \in S\) is characterized by a specific number of stages \(T_s\), and each stage has a memory limit \(M_s\). Importantly, the memory capacity of stages within the same switch is identical.
+The implementation of the rulesets occurs within the framework of programmable switches, utilizing the Protocol Independent Switch Architecture (PISA). Within this architecture, incoming packets traverse through a parser, responsible for dissecting the packet's header fields. Subsequently, the packet progresses through the match+action pipeline, which consists of distinct stages. Each stage is a logically independent unit, capable of hosting multiple groups of rules. Stages impose limitations on the number of rules they can accommodate based on available resources.
 
-The primary objective is to assist network administrators in judiciously placing all groups of rules from \(G\) into the stages of switches in \(S\) while adhering to several constraints:
+When a packet enters the pipeline, it follows a linear progression from one stage to the next. Each stage permits only one table lookup, a restriction that ensures robust performance guarantees but limits the system's programmability. While a packet cannot revert to a previous stage, it can be redirected back to the beginning of the pipeline, a process known as re-circulation. However, this comes at the expense of performance: the more re-circulations a packet underoes, the lower the network's efficiency. In the absence of re-circulations, the system operates at its peak performance, commonly referred to as line-rate.
+
+The fundamental challenge addressed in this project revolves around the efficient allocation of groups of rules within a network composed of multiple switches. Let \(G\) represent a set of groups of rules, where \(R_i\) denotes the memory requirements of group \(i \in G\). Additionally, \(D\) defines a set of dependencies between groups. For each pair \((i, j) \in D\), where \(i, j \in G\), we say that group \(i\) depends on group \(j\), i.e. there's at least one rule in group \(i\) that forwards packets to group \(j\). This dependency is unidirectional. The network also includes a set of switches \(S\), where each switch \(s \in S\) is characterized by a specific number of stages \(T_s\), and a memory limit \(M_s\). Importantly, the memory capacity of stages within the same switch is the same.
+
+The main goal consists in placing all groups of rules from \(G\) into the stages of switches in \(S\) such that the following constraints are met:
 
 \begin{enumerate}
     \item \textbf{Exclusive Placement}: Each group of rules must be allocated to one and only one stage within a switch.
@@ -9,10 +13,5 @@ The primary objective is to assist network administrators in judiciously placing
     
     \item \textbf{Dependency Constraint}: For any pair \((i, j) \in D\), where \(i, j \in G\), group \(j\) cannot be placed in a switch occurring before the switch where group \(i\) is allocated. This restriction ensures there is no re-circulation between switches.
     
-    \item \textbf{Minimized Re-circulations}: The overall number of re-circulations, signifying the redirection of packets back to earlier stages, needs to be minimized.
+    \item \textbf{Minimized Re-circulations}: The overall number of re-circulations needs to be minimized to ensure optimal network performance.
 \end{enumerate}
-
-To address this intricate problem, a tool, invoked with the command \texttt{proj1}, is to be implemented. This tool, powered by a SAT/MaxSAT/PB solver, undertakes the task of computing the harvest scheduling problem. It reads the problem instance from the standard input, utilizing the specified sets \(G\), \(R_i\), \(D\), and \(S\) as input parameters.
-
-In the subsequent sections of this report, we delve into the methodologies and algorithms employed by the tool to solve this complex problem, exploring the intricacies of group allocation, dependency management, and re-circulation minimization. Through detailed analysis and implementation, we aim to provide a comprehensive solution that not only meets the defined constraints but also optimizes the overall performance and efficiency of the network.
-
