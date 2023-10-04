@@ -1,0 +1,50 @@
+\documentclass[a4paper, 11pt]{article}
+
+\usepackage{bm}  
+\usepackage{pdfsync}  
+\usepackage{textcomp}
+\usepackage{graphicx} 
+\usepackage{fancyhdr}
+\usepackage{memhfixc} 
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb}  
+\usepackage[pdftex,bookmarks,colorlinks,breaklinks]{hyperref}  
+\usepackage[top=3cm, bottom=3cm, left = 2cm, right = 2cm]{geometry} 
+
+\geometry{a4paper} 
+\hypersetup{linkcolor=black,citecolor=black,filecolor=black,urlcolor=black}
+
+\title{Automatic Placement of Rulesets}
+\author{Guilherme Gonçalves \and João Silveira}
+\date{\today}
+
+\begin{document}
+
+% -- First page --
+\maketitle
+
+% -- Table of contents --
+\clearpage
+\tableofcontents
+\clearpage
+
+% -- Introduction --
+\section{Introduction}
+\input{sections/section1.tex}
+
+% -- Problem description --
+\section{Problem Description}
+\input{sections/section2.tex}
+
+% -- Proposed solution --
+\section{Proposed Solution}
+\input{sections/section3.tex}
+
+% -- Installation and usage --
+\section{Installation and Usage}
+\input{sections/section4.tex}
+
+% -- Bibliography --
+\bibliographystyle{abbrv}
+% \bibliography{references}
+\end{document}

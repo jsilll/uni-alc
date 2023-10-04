@@ -1,0 +1,18 @@
+The fundamental challenge addressed in this project revolves around the efficient allocation of groups of rules within a network comprising multiple switches. Let \(G\) represent a set of groups of rules, where \(R_i\) denotes the memory requirements of group \(i \in G\). Additionally, \(D\) defines dependencies between groups, signifying that group \(j\) relies on group \(i\) if there exists at least one rule in group \(i\) capable of forwarding network packets to \(j\). The network also includes a set of switches \(S\), where each switch \(s \in S\) is characterized by a specific number of stages \(T_s\), and each stage has a memory limit \(M_s\). Importantly, the memory capacity of stages within the same switch is identical.
+
+The primary objective is to assist network administrators in judiciously placing all groups of rules from \(G\) into the stages of switches in \(S\) while adhering to several constraints:
+
+\begin{enumerate}
+    \item \textbf{Exclusive Placement}: Each group of rules must be allocated to one and only one stage within a switch.
+    
+    \item \textbf{Memory Limit Compliance}: The total memory requirements of all groups in each stage must not exceed the stage's memory capacity (\(M_s\)).
+    
+    \item \textbf{Dependency Constraint}: For any pair \((i, j) \in D\), where \(i, j \in G\), group \(j\) cannot be placed in a switch occurring before the switch where group \(i\) is allocated. This restriction ensures there is no re-circulation between switches.
+    
+    \item \textbf{Minimized Re-circulations}: The overall number of re-circulations, signifying the redirection of packets back to earlier stages, needs to be minimized.
+\end{enumerate}
+
+To address this intricate problem, a tool, invoked with the command \texttt{proj1}, is to be implemented. This tool, powered by a SAT/MaxSAT/PB solver, undertakes the task of computing the harvest scheduling problem. It reads the problem instance from the standard input, utilizing the specified sets \(G\), \(R_i\), \(D\), and \(S\) as input parameters.
+
+In the subsequent sections of this report, we delve into the methodologies and algorithms employed by the tool to solve this complex problem, exploring the intricacies of group allocation, dependency management, and re-circulation minimization. Through detailed analysis and implementation, we aim to provide a comprehensive solution that not only meets the defined constraints but also optimizes the overall performance and efficiency of the network.
+

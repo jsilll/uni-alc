@@ -1,0 +1,56 @@
+\subsection{Encoding the Problem as a SAT Formula}
+
+In addressing the complex task of efficiently allocating groups of rules within a network of switches, a fundamental step was the translation of the problem into a format amenable to SAT solvers. This transformation involved the meticulous encoding of given constraints into Boolean variables and logical clauses, crafting a formal representation conducive to analysis and optimization by SAT solvers.
+
+Our approach involved a systematic method for converting the problem's constraints into SAT formulas. Below, we delineate the key aspects of our problem encoding:
+
+\begin{enumerate}
+    \item \textbf{Switches, Stages, and Groups Encoding:}
+    Boolean variables were introduced to represent the state of switches, stages within switches, and groups of rules. For instance, \(sw[i][j]\) represented whether switch \(i\) was in position \(j\), while \(gr[i][j][k]\) denoted whether group \(k\) was in stage \(j\) of switch \(i\).
+
+    \item \textbf{Positional Constraints:}
+    Constraints were formulated to ensure that each group of rules occupied exactly one stage within a switch. Utilizing cardinality encoding, we imposed constraints that guaranteed each group was allocated to one and only one stage within its respective switch. This exclusivity was accomplished through the \texttt{CardEnc.equals} method, ensuring the uniqueness of group placements within stages.
+
+    \item \textbf{Memory Limit Compliance:}
+    Constraints were devised to ensure that the total memory requirements of all groups within each stage did not exceed the stage's memory capacity. Employing Pseudo-Boolean Encodings (PBEnc), we applied an \texttt{atmost} constraint, ensuring that the sum of memory requirements of groups in a stage did not surpass the stage's memory limit.
+
+    \item \textbf{Dependency Handling:}
+    Dependencies between groups were meticulously managed to prevent re-circulations between switches. For each pair \((i, j)\) where \(j\) depended on \(i\), specific conditions were established. Auxiliary Boolean variables \(besw[i][j]\) were introduced, indicating whether switch \(i\) was behind switch \(j\). Formulating appropriate clauses, we ensured that groups dependent on one another could not be placed in switches occurring before the switches of their dependencies.
+
+    \item \textbf{Re-circulation Minimization:}
+    To minimize re-circulations, auxiliary Boolean variables \(begr[i][j]\) were introduced, signifying whether group \(j\) was behind group \(i\). By minimizing these variables in our SAT encoding, we aimed to minimize the overall number of re-circulations between dependent groups.
+\end{enumerate}
+
+Through this meticulous encoding of constraints, we transformed the problem into a series of Boolean variables and logical relationships. The resulting SAT formula encapsulated the essence of the problem, enabling sophisticated solvers like RC2 to explore the solution space efficiently. This systematic encoding provided a robust foundation for solving the Automatic Placement of Rulesets problem within a network of switches.
+
+\subsection{MaxSAT Algorithm: A High-Level Overview}
+
+\subsubsection{Objective Function}
+
+MaxSAT (Maximum Satisfiability) is an optimization version of the Boolean satisfiability problem (SAT). In contrast to SAT, MaxSAT seeks an assignment that satisfies the maximum number of clauses, optimizing a given objective function.
+
+\subsubsection{Transformation to Weighted Clauses}
+
+MaxSAT problems are often transformed into weighted clauses. Clauses are assigned weights, indicating their importance. The objective is to find an assignment that maximizes the total weight of satisfied clauses.
+
+\subsubsection{Search for Satisfying Assignments}
+
+MaxSAT solvers employ advanced search algorithms to explore the solution space. These algorithms combine greedy strategies, local search techniques, and intelligent branching heuristics to iteratively refine assignments.
+
+\subsubsection{Conflict-Driven Learning}
+
+MaxSAT solvers incorporate conflict-driven learning mechanisms. When a conflict is encountered (i.e., a clause cannot be satisfied), the solver learns from this conflict. It identifies a subset of conflicting clauses, relaxes them, and tries to find an assignment that satisfies the remaining clauses.
+
+\subsubsection{Incremental and Partial MaxSAT}
+
+Some MaxSAT algorithms support incremental solving and partial MaxSAT, allowing the solver to handle a series of related problems efficiently. Incremental solving involves solving a sequence of MaxSAT instances with shared variables and clauses, exploiting the similarities between them.
+
+\subsubsection{Advanced Techniques}
+
+MaxSAT solvers often integrate advanced techniques like preprocessing, symmetry breaking, and adaptive branching heuristics. These techniques enhance the efficiency of the solver and enable it to handle large and complex problem instances.
+
+\subsubsection{Optimization and Solution Extraction}
+
+Once a satisfying assignment is found, the solver evaluates the objective function. If the problem involves multiple objectives, the solver may use algorithms like Pareto-based methods to explore the trade-offs between conflicting objectives. The solver then provides the optimized solution or a set of Pareto-optimal solutions.
+
+In the context of the Automatic Placement of Rulesets problem, MaxSAT algorithms play a vital role in finding solutions that optimize critical aspects, such as minimizing re-circulations or maximizing the satisfaction of dependencies between groups. Leveraging a combination of intelligent search strategies and conflict resolution techniques, MaxSAT algorithms provide an effective approach to tackling complex optimization challenges in various domains, including network optimization problems like the one at hand.
