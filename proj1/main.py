@@ -98,9 +98,9 @@ def solve(required, stages, capacities, dependencies):
             solver.add_clause(clause)
     # Only one switch per position
     for pos in range(N_SWITCHES):
-        for s1 in range(N_SWITCHES):
-            for s2 in range(s1 + 1, N_SWITCHES):
-                solver.add_clause([-sw[s1][pos], -sw[s2][pos]])
+        lits = [sw[i][pos] for i in range(N_SWITCHES)]
+        for clause in CardEnc.atmost(lits, 1, vpool=vpool, encoding=CardEncType.seqcounter).clauses:
+            solver.add_clause(clause)
     # Each group is in exactly one stage out of all switches
     for group in range(N_GROUPS):
         lits = [gr[i][j][group] for i in range(N_SWITCHES) for j in range(stages[i])]
