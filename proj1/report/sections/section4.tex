@@ -1,51 +1,16 @@
-\subsection{Installation}
+\subsection{Installation and Usage}
 
-To utilize the developed solution for the Automatic Placement of Rulesets problem, follow the steps outlined below for installation and usage:
+To utilize the developed solution for the Automatic Placement of Rulesets problem, you must first install Python 3.x
+and the \texttt{pysat} library on your system.
 
-\begin{enumerate}
-    \item \textbf{Python:} Ensure you have Python 3.x installed on your system. If not, download and install it from the official Python website: \url{https://www.python.org/}.
+\begin{verbatim}
+      pip install python-sat
+\end{verbatim}
 
-    \item \textbf{SAT Solver (PySAT):} The solution relies on a SAT solver. We recommend using the \texttt{pysat} library, a popular Python library for working with SAT solvers. Install it using \texttt{pip} by running the following command in your terminal or command prompt:
+After installing the necessary dependencies, you can proceed to runnning the script.
 
-          \begin{verbatim}
-    pip install python-sat
-    \end{verbatim}
+\begin{verbatim}
+      python proj1.py < <input_file>
+\end{verbatim}
 
-    \item \textbf{Automatic Placement Tool:} Download the provided Python script (\texttt{proj1.py}) to your local machine.
-\end{enumerate}
-
-\subsection{Usage}
-
-\begin{enumerate}
-    \item \textbf{Input File:} Prepare an input file containing the problem instance. The input file should follow the specified format, including the number of groups of rules, details about switches, stages, capacities, dependencies, and other necessary information.
-
-          \textit{Example input file (\texttt{input.txt}):}
-          \begin{verbatim}
-    3
-    2
-    50 70 30
-    100 80 90
-    2
-    1 2
-    2 3
-    3 1
-    \end{verbatim}
-
-    \item \textbf{Execute the Script:} Run the Python script with the input file as an argument. For example:
-
-          \begin{verbatim}
-    python proj1.py input.txt
-    \end{verbatim}
-
-          Replace \texttt{input.txt} with the path to your input file.
-
-    \item \textbf{View Output:} The script will process the input and display the output on the terminal. If a solution is found, it will present the minimum number of re-circulations, the positions of switches, and the groups allocated to stages within switches.
-\end{enumerate}
-
-\textbf{Notes:}
-\begin{itemize}
-    \item Ensure that the input file adheres to the specified format and constraints.
-    \item If the script reports errors or issues, double-check the input file for correctness and re-run the script.
-\end{itemize}
-
-By following these steps, you can easily install and use the provided solution to tackle instances of the Automatic Placement of Rulesets problem. For any additional assistance or troubleshooting, refer to the script's comments or consult the documentation of the \texttt{pysat} library.
+The input file should follow the specified format, including the number of groups of rules, details about switches, stages, capacities, dependencies, and other necessary information. The script will process the input and display the output on the terminal. If a solution is found, it will present the minimum number of re-circulations, the positions of switches, and the groups allocated to stages within switches.
