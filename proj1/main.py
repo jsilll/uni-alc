@@ -107,9 +107,9 @@ def solve(required, stages, capacities, dependencies):
         for clause in CardEnc.equals(lits, vpool=vpool, encoding=CardEncType.seqcounter).clauses:
             solver.add_clause(clause)
     # The memory capacity of each switch stage is not exceeded
+    weights = [required[group] for group in range(N_GROUPS)]
     for switch in range(N_SWITCHES):
         for stage in range(stages[switch]):
-            weights = [required[group] for group in range(N_GROUPS)]
             lits = [gr[switch][stage][group] for group in range(N_GROUPS)]
             for clause in PBEnc.atmost(lits, weights, capacities[switch], vpool=vpool, encoding=PBEncType.bdd).clauses:
                 solver.add_clause(clause)

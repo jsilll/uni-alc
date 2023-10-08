@@ -14,20 +14,51 @@ To conclude, MaxSAT's ability to handle both mandatory and optimality constraint
 
 \subsection{Encoding of the Problem}
 
-Below, we delineate the key aspects of our encoding:
+\subsubsection{Variables}
+
+The first step in the formulation of the problem was to identify the variables that would be used to represent the problem's components. The placement of a switch \(i\) in position \(j\) was represented by the variable \(sw[i][j]\). Similarly, the placement of a group \(k\) in stage \(j\) of switch \(i\) was represented by the variable \(gr[i][j][k]\).
+
+\subsubsection{Auxiliary Variables}
+
+In addition to the variables representing the placement of switches and groups, we introduced auxiliary variables to facilitate the formulation of constraints. The first set of auxiliary variables \(besw[i][j]\) was used to indicate whether switch \(i\) is behind switch \(j\). The second set of auxiliary variables \(begr[i][j]\) was used to indicate whether group \(j\) is behind group \(i\). Importantly, in our formulation, for a group to be behind another group, it must be in a switch that is behind the switch of the other group or, if the groups are in the same switch, it must be in the same stage or in a stage that comes before the stage of the other group.
+
+To make the values of these variables meaningful and consistent with the main variables, we formulted constraints that ensured such properties:
 
 \begin{enumerate}
-    \item \textbf{Switches Placement:} To represent the placement of switches, we introduced variables \(sw[i][j]\), that are true if switch \(i\) is placed in position \(j\).
+    \item \textbf{Relationship between \texttt{sw} and \texttt{besw}:} For each pair of switches with their respective positions \((s1, p1)\) and \((s2, p2)\), such that \(p1 < p2\), the following clause was added:
+    \begin{center}
+        \((sw[s1][p1] \cap sw[s2][p2]) \Rightarrow besw[s1][s2]\)
+    \end{center}
 
-    \item \textbf{Groups Placement:} To represent the placement of groups, we introduced variables \(gr[i][j][k]\), that are true if group \(k\) is placed in stage \(j\) of switch \(i\).
+    \item \textbf{Relationship between \texttt{gr} and \texttt{begr}:} For each pair of groups with their respective switches and stages \((s1, st1, g1)\) and \((s2, st2, g2)\), such that \(s1 = s2\) and \(st1 \leq st2\), the following clause was added:
+    \begin{center}
+        \((gr[s1][st1][g1] \cap gr[s2][st2][g2]) \Rightarrow begr[g1][g2]\)
+    \end{center}
+    Importantly, we did not need to add clauses for the case where \(s1 \neq s2\) because it is already ensured by the relationship between \texttt{sw} and \texttt{besw}.
+\end{enumerate}
 
+\subsubsection{Hard Constraints}
+
+Below, we delineate the non-negotiable constraints that must be satisfied for a solution to be valid. These constraints were formulated as hard clauses, ensuring the fundamental feasibility of the solution.
+
+\begin{enumerate}
     \item \textbf{Uniqueness Constraints:} Constraints were formulated to ensure that each switch and group of rules was placed exactly once. Utilizing cardinality encoding, we imposed uniqueness properties on the variables \(sw\) and \(gr\). This was accomplished through the use of the \texttt{CardEnc.equals} method with a cardinality of 1. Moreover, an additional set of cardinality constraints is needed to ensure that only one switch is placed in each position. This was achieved through the use of the \texttt{CardEnc.atmost} method with a cardinality of 1.
 
     \item \textbf{Memory Limit Compliance:} Constraints were devised to ensure that the total memory requirements of all groups within each stage did not exceed the stage's memory capacity. Employing Pseudo-Boolean Encodings through the use of \texttt{PBEnc.atmost} method, we formulated constraints that ensure that the sum of memory requirements of the groups in each stage does not surpass that stage's memory limit.
 
-    \item \textbf{Dependency Handling:} Dependencies between groups need to be handled in order to prevent re-circulations between switches. For each pair \((i, j)\) where \(j\) depends on \(i\), specific conditions were established. Auxiliary boolean variables \(besw[i][j]\) were introduced, indicating whether switch \(i\) is behind switch \(j\). By formulating clauses envolving these variables, we ensured that switches dependent on one another should not be placed in positions occurring before the positions of their dependencies.
+    \item \textbf{Dependency Handling:} Dependencies between groups need to be handled in order to prevent re-circulations between switches. For each pair of groups \((g1, g2)\) where \(g2\) depends on \(g1\), specific conditions were established. Using the auxiliary variables \(besw\) and \(gr\), this is fairly straightforward. For each pair of groups \((g1, g2)\) where \(g2\) depends on \(g1\) and for each pair of switches \((s1, s2)\) where \(s2 > s1\) and for each pair of stages \((st1, st2)\), the following clauses were added:
+    \begin{center}
+        \((besw[s1][s2] \cap gr[s2][st2][g1])\Rightarrow \lnot gr[s1][st1][g2]\)
 
-    \item \textbf{Re-circulations:} To minimize re-circulations, another set of auxiliary boolean variables \(begr[i][j]\) were introduced, signifying whether group \(j\) was behind group \(i\). By formulating clauses envolving these variables, for each pair \((i, j)\) where \(j\) depends on \(i\), we ensured that groups dependent on one another should not be placed in stages occurring before the stages of their dependencies.
+        \((besw[s2][s1] \cap gr[s1][st1][g1])\Rightarrow \lnot gr[s2][st2][g2]\)
+    \end{center}
 \end{enumerate}
+
+\subsubsection{Soft Constraints}    
+
+The only soft constraint in the problem was the minimization of re-circulations. Through the use of the auxiliary variables \(begr\), we formulated the following clause for each pair of groups \((g1, g2)\) where \(g2\) depends on \(g1\):
+\begin{center}
+    \(\lnot begr[g1][g2]\)
+\end{center}
 
 Through this encoding of constraints, we transformed the problem into a series of boolean variables and logical relationships. The resulting formula encapsulated the essence of the problem, enabling sophisticated solvers like RC2 to explore the solution space efficiently.
