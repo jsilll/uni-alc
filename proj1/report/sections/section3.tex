@@ -10,7 +10,7 @@ MaxSAT is an optimization version of the Boolean Satisfiability problem (SAT). I
     \item \textbf{Soft Clauses:} Optional constraints that contribute to the optimization objective. They represent preferences or desires in the problem. Satisfying soft clauses enhances the solution's quality but is not obligatory for validity. The solver's job is to find an assignment that optimizes the total weight of satisfied soft clauses which, in our case, was the minimization of re-circulations.
 \end{enumerate}
 
-To conclude, MaxSAT's ability to handle both mandatory and optimality constraints, makes it the superior choice for complex problems like the Automatic Placement of Rulesets. After some experimentation, we decided to use RC2 solver.
+To conclude, MaxSAT's ability to handle both mandatory and optimality constraints, makes it the superior choice for complex problems like the Automatic Placement of Rulesets. After some experimentation, we decided to use the RC2 solver.
 
 \subsection{Encoding of the Problem}
 
@@ -34,7 +34,7 @@ To make the values of these variables meaningful and consistent with the main va
     \begin{center}
         \((gr[s1][st1][g1] \cap gr[s2][st2][g2]) \Rightarrow begr[g1][g2]\)
     \end{center}
-    Importantly, we did not need to add clauses for the case where \(s1 \neq s2\) because it is already ensured by the relationship between \texttt{sw} and \texttt{besw}.
+    We did not need to add clauses for the case where \(s1 \neq s2\) because it is already ensured by the relationship between \texttt{sw} and \texttt{besw}.
 \end{enumerate}
 
 \subsubsection{Hard Constraints}
@@ -44,7 +44,7 @@ Below, we delineate the non-negotiable constraints that must be satisfied for a 
 \begin{enumerate}
     \item \textbf{Uniqueness Constraints:} Constraints were formulated to ensure that each switch and group of rules was placed exactly once. Utilizing cardinality encoding, we imposed uniqueness properties on the variables \(sw\) and \(gr\). This was accomplished through the use of the \texttt{CardEnc.equals} method with a cardinality of 1. Moreover, an additional set of cardinality constraints is needed to ensure that only one switch is placed in each position. This was achieved through the use of the \texttt{CardEnc.atmost} method with a cardinality of 1.
 
-    \item \textbf{Memory Limit Compliance:} Constraints were devised to ensure that the total memory requirements of all groups within each stage did not exceed the stage's memory capacity. Employing Pseudo-Boolean Encodings through the use of \texttt{PBEnc.atmost} method, we formulated constraints that ensure that the sum of memory requirements of the groups in each stage does not surpass that stage's memory limit.
+    \item \textbf{Memory Limit Compliance:} Constraints were devised to ensure that the total memory requirements of all groups within each stage did not exceed the stage's memory capacity. Employing Pseudo-Boolean Encodings through the use of \texttt{PBEnc.atmost} method with a cardinality corresponding to the stage's memory capacity, the group's memory requirements as weights, and the corresponding stage's variables in \(gr\) as literals, we ensured this property.
 
     \item \textbf{Dependency Handling:} Dependencies between groups need to be handled in order to prevent re-circulations between switches. For each pair of groups \((g1, g2)\) where \(g2\) depends on \(g1\), specific conditions were established. Using the auxiliary variables \(besw\) and \(gr\), this is fairly straightforward. For each pair of groups \((g1, g2)\) where \(g2\) depends on \(g1\) and for each pair of switches \((s1, s2)\) where \(s2 > s1\) and for each pair of stages \((st1, st2)\), the following clauses were added:
     \begin{center}
