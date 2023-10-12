@@ -70,7 +70,6 @@ def solve(required, stages, capacities, dependencies):
 
     if s.check() == sat:
         model = s.model()
-        print(model)
         cost = model[cost].as_long()
         sw = [0 for i in range(N_SWITCHES)]
 
