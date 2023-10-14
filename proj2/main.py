@@ -127,6 +127,7 @@ def solve(required, stages, capacities, dependencies):
                         switches[s2] <= switches[s1],
                     )
                 )
+
     # Transform this into soft constraints
     for g1, g2 in dependencies:
         s.add_soft(Implies(groups[g1][0] == groups[g2][0], groups[g1][1] < groups[g2][1]))
