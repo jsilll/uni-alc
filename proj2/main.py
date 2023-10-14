@@ -37,8 +37,12 @@ def solve(required, stages, capacities, dependencies):
     ]
     switches = [Int(f"Switch{i+1}'s position") for i in range(N_SWITCHES)]
 
-    # Solver
+    # Optimizer
     s = Optimize()
+    
+    # Optimizer settings
+    s.set("timeout", 10000)
+    s.set("maxsat_engine", "rc2")
 
     for i in range(N_SWITCHES):
         # Switches' position is valid
@@ -79,41 +83,33 @@ def solve(required, stages, capacities, dependencies):
                         And(groups[g1][0] == s1, groups[g2][0] == s2),
                         switches[s1] <= switches[s2],
                     )
-                )   
+                )
                 s.add(
                     Implies(
                         And(groups[g1][0] == s2, groups[g2][0] == s1),
                         switches[s2] <= switches[s1],
                     )
                 )
-    cost = Int("cost")
-    # Minimize recirculations
-    s.add(
-        cost
-        == Sum(
-            [
-                If(
-                    And(groups[g1][0] == groups[g2][0], groups[g1][1] >= groups[g2][1]),
-                    1,
-                    0,
-                )
-                for g1, g2 in dependencies
-            ]
-        )
-    )
-    s.minimize(cost)
+    # Transform this into soft constraints
+    for g1, g2 in dependencies:
+        s.add_soft(Implies(groups[g1][0] == groups[g2][0], groups[g1][1] < groups[g2][1]))
 
     if not s.check() == sat:
         return -1, [], []
     else:
-        model = s.model()
-        sw = [0 for i in range(N_SWITCHES)]
+        m = s.model()
+
+        cost = sum([m.evaluate(o).as_long() for o in s.objectives()])
+
+        sw = [0] * N_SWITCHES
         for i in range(N_SWITCHES):
-            sw[model[switches[i]].as_long()] = i + 1
+            sw[m[switches[i]].as_long()] = i + 1
+
         gp = [[[] for _ in range(stages[j])] for j in range(N_SWITCHES)]
         for group, (switch, stage) in enumerate(groups):
-            gp[model[switch].as_long()][model[stage].as_long()].append(group + 1)
-        return model[cost].as_long(), sw, gp
+            gp[m[switch].as_long()][m[stage].as_long()].append(group + 1)
+
+        return cost, sw, gp
 
 
 def output(file: TextIO, cost, switches, groups):
