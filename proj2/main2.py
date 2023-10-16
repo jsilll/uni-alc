@@ -74,17 +74,6 @@ def solve(required, stages, capacities, dependencies):
         s.add_soft(
             Implies(groups[g1][0] == groups[g2][0], groups[g1][1] < groups[g2][1])
         )
-
-    s.set("maxres.wmax", True)
-    s.set("maxsat_engine", "maxres")
-    s.set("maxres.maximize_assignment", True)
-    s.set("maxres.add_upper_bound_block", True)
-    s.set("enable_lns", True)
-    s.set("enable_sls", True)
-    s.set("enable_core_rotate", True)
-    s.set("pp.neat", False)
-    s.set("optsmt_engine", "symba")
-    s.set("pb.compile_equality", True)
     
     print(len(s.sexpr()), file=sys.stderr)
 
