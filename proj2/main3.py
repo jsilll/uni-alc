@@ -59,6 +59,8 @@ def solve(required, stages, capacity, dependencies):
     N_GROUPS = len(required)
     N_SWITCHES = len(stages)
 
+    offset = [0] + list(accumulate(stages))[:-1]
+
     group_stage = [Int(f"Group {i+1} stage") for i in range(N_GROUPS)]
     group_switch = [Int(f"Group {i+1} switch") for i in range(N_GROUPS)]
     switch_behind = [
@@ -85,21 +87,20 @@ def solve(required, stages, capacity, dependencies):
         s.add(And(0 <= group_stage[g1], group_stage[g1] < N_STAGES))
         s.add(And(0 <= group_switch[g1], group_switch[g1] < N_SWITCHES))
 
-    stage = 0
-    for s1, n in enumerate(stages):
-        for _ in range(n):
+    for s1, (n, o) in enumerate(zip(stages, offset)):
+        for st1 in range(o, o + n):
             for g1 in range(N_GROUPS):
-                s.add(Implies(group_stage[g1] == stage, group_switch[g1] == s1))
+                s.add(Implies(group_stage[g1] == st1, group_switch[g1] == s1))
+                s.add(Implies(group_switch[g1] == s1, And(o <= group_stage[g1], group_stage[g1] < o + n)))
             s.add(
                 Sum(
                     [
-                        If(group_stage[g1] == stage, required[g1], 0)
+                        If(group_stage[g1] == st1, required[g1], 0)
                         for g1 in range(N_GROUPS)
                     ]
                 )
                 <= capacity[s1]
             )
-            stage += 1
 
     for g1, g2 in dependencies:
         s.add_soft(
@@ -115,9 +116,8 @@ def solve(required, stages, capacity, dependencies):
                             And(
                                 group_switch[g1] == p[0],
                                 group_switch[g2] == p[1],
-                                switch_behind[p[0]][p[1]],
                             ),
-                            group_stage[g1] < group_stage[g2],
+                            switch_behind[p[0]][p[1]],
                         )
                     )
 
@@ -146,7 +146,6 @@ def solve(required, stages, capacity, dependencies):
             else [1]
         )
 
-        offset = [0] + list(accumulate(stages))
         groups = [[[] for _ in range(stages[j])] for j in range(N_SWITCHES)]
         for group, stage, switch in map(
             lambda x: (x[0], x[1] - offset[x[2]], x[2]),
