@@ -5,8 +5,8 @@
 from z3 import *
 
 from typing import TextIO
-from itertools import accumulate
 from collections import defaultdict
+from itertools import accumulate, permutations
 
 
 def parse(file: TextIO):
@@ -40,11 +40,14 @@ def toposort(edges: list[tuple[int, int]]) -> list[int]:
             if not visited[v]:
                 helper(v, graph, visited, res)
         res.append(u)
+
     graph = defaultdict(list)
     for u, v in edges:
         graph[u].append(v)
+        if v not in graph:
+            graph[v] = []
     res = []
-    visited = [False] * (len(graph) + 1)
+    visited = [False] * (len(graph))
     for i in reversed(range(len(graph))):
         if not visited[i]:
             helper(i, graph, visited, res)
@@ -69,6 +72,14 @@ def solve(required, stages, capacity, dependencies):
         s.add(switch_behind[s1][s1] == True)
         for s2 in range(s1 + 1, N_SWITCHES):
             s.add(switch_behind[s1][s2] == Not(switch_behind[s2][s1]))
+            for s3 in range(s2 + 1, N_SWITCHES):
+                for p in permutations([s1, s2, s3]):
+                    s.add(
+                        Implies(
+                            And(switch_behind[p[0]][p[1]], switch_behind[p[1]][p[2]]),
+                            switch_behind[p[0]][p[2]],
+                        )
+                    )
 
     for g1 in range(N_GROUPS):
         s.add(And(0 <= group_stage[g1], group_stage[g1] < N_STAGES))
@@ -98,18 +109,17 @@ def solve(required, stages, capacity, dependencies):
         )
         for s1 in range(N_SWITCHES):
             for s2 in range(s1 + 1, N_SWITCHES):
-                s.add(
-                    Implies(
-                        And(group_switch[g1] == s1, group_switch[g2] == s2),
-                        switch_behind[s1][s2],
+                for p in permutations([s1, s2]):
+                    s.add(
+                        Implies(
+                            And(
+                                group_switch[g1] == p[0],
+                                group_switch[g2] == p[1],
+                                switch_behind[p[0]][p[1]],
+                            ),
+                            group_stage[g1] < group_stage[g2],
+                        )
                     )
-                )
-                s.add(
-                    Implies(
-                        And(group_switch[g1] == s2, group_switch[g2] == s1),
-                        switch_behind[s2][s1],
-                    )
-                )
 
     print(f"Finished Enconding: {len(s.sexpr())} constraints", file=sys.stderr)
 
@@ -118,18 +128,22 @@ def solve(required, stages, capacity, dependencies):
         m = s.model()
 
         cost = sum([m.evaluate(o).as_long() for o in s.objectives()])
-        switches = list(
-            map(
-                lambda x: x + 1,
-                toposort(
-                    [
-                        (j, i) if m.evaluate(switch_behind[i][j]) else (i, j)
-                        for i in range(N_SWITCHES)
-                        for j in range(i + 1, N_SWITCHES)
-                        if i != j
-                    ]
-                ),
+        switches = (
+            list(
+                map(
+                    lambda x: x + 1,
+                    toposort(
+                        [
+                            (j, i) if m.evaluate(switch_behind[i][j]) else (i, j)
+                            for i in range(N_SWITCHES)
+                            for j in range(i + 1, N_SWITCHES)
+                            if i != j
+                        ]
+                    ),
+                )
             )
+            if N_SWITCHES > 1
+            else [1]
         )
 
         offset = [0] + list(accumulate(stages))
@@ -155,6 +169,7 @@ def solve(required, stages, capacity, dependencies):
 
     print("Finished Solving: Unsatisfiable", file=sys.stderr)
     return -1, [], []
+
 
 def output(file: TextIO, cost, switches, groups):
     if cost == -1:
