@@ -71,7 +71,6 @@ def solve(required, stages, capacity, dependencies):
     s = Optimize()
 
     for s1 in range(N_SWITCHES):
-        s.add(switch_behind[s1][s1] == True)
         for s2 in range(s1 + 1, N_SWITCHES):
             s.add(switch_behind[s1][s2] == Not(switch_behind[s2][s1]))
             for s3 in range(s2 + 1, N_SWITCHES):
@@ -84,8 +83,10 @@ def solve(required, stages, capacity, dependencies):
                     )
 
     for g1 in range(N_GROUPS):
-        s.add(And(0 <= group_stage[g1], group_stage[g1] < N_STAGES))
-        s.add(And(0 <= group_switch[g1], group_switch[g1] < N_SWITCHES))
+        s.add(0 <= group_stage[g1])
+        s.add(0 <= group_switch[g1])
+        s.add(group_stage[g1] < N_STAGES)
+        s.add(group_switch[g1] < N_SWITCHES)
 
     for s1, (n, o) in enumerate(zip(stages, offset)):
         for g1 in range(N_GROUPS):
