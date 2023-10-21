@@ -88,10 +88,16 @@ def solve(required, stages, capacity, dependencies):
         s.add(And(0 <= group_switch[g1], group_switch[g1] < N_SWITCHES))
 
     for s1, (n, o) in enumerate(zip(stages, offset)):
+        for g1 in range(N_GROUPS):
+            s.add(
+                Implies(
+                    group_switch[g1] == s1,
+                    And(o <= group_stage[g1], group_stage[g1] < o + n),
+                )
+            )
         for st1 in range(o, o + n):
             for g1 in range(N_GROUPS):
                 s.add(Implies(group_stage[g1] == st1, group_switch[g1] == s1))
-                s.add(Implies(group_switch[g1] == s1, And(o <= group_stage[g1], group_stage[g1] < o + n)))
             s.add(
                 Sum(
                     [
