@@ -68,6 +68,9 @@ def solve(required, stages, capacity, dependencies):
         for i in range(N_SWITCHES)
     ]
 
+    stages_memory = [[Int(f'Group {gr} is in stage {st}') for gr in range(N_GROUPS)]
+                      for st in range(N_STAGES)]
+
     s = Optimize()
 
     for s1 in range(N_SWITCHES):
@@ -99,12 +102,11 @@ def solve(required, stages, capacity, dependencies):
         for st1 in range(o, o + n):
             for g1 in range(N_GROUPS):
                 s.add(Implies(group_stage[g1] == st1, group_switch[g1] == s1))
+                s.add(And(stages_memory[st1][g1] >= 0, stages_memory[st1][g1] <= 1))
+                s.add(Implies(group_stage[g1] == st1, stages_memory[st1][g1] == 1))
             s.add(
                 Sum(
-                    [
-                        If(group_stage[g1] == st1, required[g1], 0)
-                        for g1 in range(N_GROUPS)
-                    ]
+                    [ stages_memory[st1][gr] * req for gr,req in zip(range(N_GROUPS), required)]
                 )
                 <= capacity[s1]
             )
