@@ -57,13 +57,13 @@ Below, we delineate the non-negotiable constraints that must be satisfied for a 
 
     \item \textbf{Memory Limit Compliance:} Constraints were devised to ensure that the total memory requirements of all groups within each stage did not exceed the stage's memory capacity. The constrains were the following for a stage $st$:
     \begin{center}
-        \(\sum_{g=1}^{G} stages\_memory[st][g] * R_g \leq M_st \)
+        \(\sum_{g=1}^{G} stages\_memory[st][g] * R_g \leq M_{st} \)
     \end{center}
     In straightforward terms, when a group occupies a stage, it incurs a memory requirement with a weight of one, thereby making a contribution towards reaching the memory limit of that stage. Note that $R_g$ is the memory requirements for group $g$ and $M_st$ is the memory capacity of stage $st$. Enforcing this constrains on all stages available achieves the desired goal.
 
-    \item \textbf{Dependency Handling:} Dependencies between groups need to be handled in order to prevent re-circulations between switches. For each pair of groups \((g1, g2)\) where \(g1\) depends on \(g2\), specific conditions were established. Using the auxiliary variable $switch\_behind$ the constrains are pretty straightforward. For each pair of switches $s1$ and $s2$ and for every possible permutation of the switches' position, the constrain is:
+    \item \textbf{Dependency Handling:} Dependencies between groups need to be handled in order to prevent re-circulations between switches. For each pair of groups \((g1, g2)\) where \(g1\) depends on \(g2\), specific conditions were established. Using the auxiliary variable $switch\_behind$ the constrains are pretty straightforward. For each pair of switches $s1$ and $s2$ and for every possible permutation of the switches' position, the constraint is:
     \begin{center}
-        \(group\_switch[g1] == s1 \cap group\_switch[g2] == g2 \implies switch_behind[s1][s2]  \)
+        \(group\_switch[g1] == s1 \cap group\_switch[g2] == s2 \implies switch\_behind[s1][s2]  \)
         
     \end{center}
 \end{enumerate}
