@@ -1,8 +1,8 @@
 \subsection{Choice of Solver}
 
-The Automatic Placement of Rulesets problem involves intricate dependencies and memory constraints. For this reason, choosing the right solver was critical to the project's success. We chose to formulate the problem as an SMT (Satisfiability Modulo Theories) instance because SMT solvers excel in managing complex logical constraints and optimizing problems. This approach allows us to express the problem's constraints and dependencies as logical formulae, enabling the solver to efficiently explore and find solutions while considering the intricate nature of the problem.
+The Automatic Placement of Rulesets problem involves intricate dependencies and memory constraints. For this reason, choosing the right solver was critical to the project's success. We chose to formulate the problem as an SMT (Satisfiability Modulo Theories) instance because SMT solvers excel in managing complex logical constraints and optimizing problems. This approach allows us to express the problem's constraints and dependencies as a set of logical and arithmetic formulas, enabling the solver to efficiently explore and find solutions while considering the intricate nature of the problem.
 
-SMT (Satisfiability Modulo Theories) is an extended version of the Boolean Satisfiability problem (SAT). In contrast to SAT, SMT is designed to handle problems involving not only pure Boolean logic but also rich theories, such as arithmetic, arrays, and bit-vectors. This makes SMT suitable for a wider range of real-world problems where SAT solvers may fall short due to the complexity of the constraints and dependencies involved. In SMT, clauses are divided into two categories:
+SMT (Satisfiability Modulo Theories) is an extended version of the Boolean Satisfiability problem (SAT). In contrast to SAT, SMT is designed to handle problems involving not only pure Boolean logic but also rich theories, such as arithmetic, arrays, and bit-vectors. This makes SMT suitable for a wider range of real-world problems where SAT solvers may fall short due to the complexity of the constraints and dependencies involved. In optimization SMT problems, clauses can be classified into two categories:
 
 \begin{enumerate}
     \item \textbf{Hard Clauses:} Mandatory constraints that must be satisfied for a solution to be valid. They represent non-negotiable requirements and ensure the fundamental feasibility of the solution. In our problem, all the constraints, except for the minimization of re-circulations, were considered hard clauses.
@@ -10,32 +10,34 @@ SMT (Satisfiability Modulo Theories) is an extended version of the Boolean Satis
     \item \textbf{Soft Clauses:} Optional constraints that contribute to the optimization objective. They represent preferences or desires in the problem. Satisfying soft clauses enhances the solution's quality but is not obligatory for validity. The solver's job is to find an assignment that optimizes the total weight of satisfied soft clauses which, in our case, was the minimization of re-circulations.
 \end{enumerate}
 
-To conclude, SMT's ability to handle both mandatory and optimality constraints, makes it the superior choice for complex problems like the Automatic Placement of Rulesets.
+To conclude, SMT's ability to handle both mandatory and optimality constraints, makes it a suitable choice for complex problems like the Automatic Placement of Rulesets.
 
-\subsection{Encoding of the Problem}
+\subsection{Problem Encoding}
 
 \subsubsection{Variables}
 
-The first step in the formulation of the problem was to identify the variables that would be used to represent the problem's components. 
-First, the placement of a group \(i\) in stage \(j\) was represented by assigning the value $j$ to the variable \(group\_stage[i]\). Similarly, the placement of a group \(i\) in switch \(j\) was represented by assigning the value $j$ to the variable \(group\_switch[i]\). Both \(group\_stage\) and \(group\_switch\) arrays hold z3's symbolic integers.
+The first step in the formulation of the problem was to identify the variables that would be used to represent the problem's components. We decided to assign each individual stage in the network a unique identifier. This way, the placement of a group \(i\) in a stage with unique identifier \(j\) was represented by assigning the value $j$ to the variable \(group\_stage[i]\). Similarly, the placement of a group \(i\) in switch \(j\) was represented by assigning the value $j$ to the variable \(group\_switch[i]\). Both \(group\_stage\) and \(group\_switch\) arrays hold Z3's symbolic integers.
 
-\subsubsection{Auxiliary Variables}
+To encode the ordering of switches, we defined the boolean variable $switch\_behind[i][j]$. This variable is set to true when switch \(i\) is positioned behind switch \(j\).
 
-In addition to the variables that represent switch and group placements, we introduced auxiliary variables to simplify constraint formulation. Since stage placements are based on their absolute positions (e.g., stage 0 of switch 0 is at position 0, stage 1 of switch 0 is at position 1, and so forth), we created the first auxiliary variable, an array called '$offset$,' which stores the starting offsets for each switch's stages.
+Finally, we defined the integer variable, $stages\_memory[i][j]$ that holds a value of 0 when group \(j\) is in stage \(i\) or 1 otherwise. From our experiments, we found that not only did this variable help the solver find solutions faster, but it also perfomed the best when it was defined as an integer variable rather than a boolean one.
 
-The second auxiliary variable, denoted as $switch\_behind[i][j]$, is a symbolic Boolean in the Z3 framework, and its purpose is to indicate whether switch \(i\) is positioned behind switch \(j\). 
+\subsubsection{Consistency Constraints}
 
-The third and final variable, $stages\_memory[i][j]$, is represented as a symbolic integer in Z3. It holds a value of 0 when group \(j\) is in stage \(i\) or 1 otherwise, and it plays a crucial role in formulating memory constraints.
-
-To make the values of these variables meaningful and consistent with the main variables, we formulted constraints that ensured such properties:
+To relate the different variables and to make sure that their values are kept consistent and meaningful, we formulated a set of consistency constraints. These constraints were formulated as hard clauses, ensuring the fundamental feasibility of the solution.
 
 \begin{enumerate}
-    \item \textbf{Relationship between \texttt{group\_stage} and \texttt{stages\_memory}:} For each pair of stage, $st$, and group,$gr$, the following clause was added:
+    \item \textbf{Relationship between \texttt{group\_stage} and \texttt{stages\_memory}:} For each pair of stage $st$, and group $gr$, the following clause was added:
     \begin{center}
         \(group\_stage[gr] == st \implies stages\_memory[st][gr] == 1\)
     \end{center}
 
-    \item \textbf{Transitive property in \texttt{switch\_behind}:} To ensure the transitive proper was accounted for, for every permutation possible of $s1$,$s2$,$s3$ the following clause was added:
+    \item \textbf{No loops in \texttt{switch\_behind}:} To ensure that no loops were formed in the ordering of switches, the following clause was added:
+    \begin{center}
+        \(switch\_behind[s1][s2] \Leftrightarrow \neg switch\_behind[s2][s1]\)
+    \end{center}
+
+    \item \textbf{Transitive property in \texttt{switch\_behind}:} To ensure the transitive property was accounted for, for every permutation possible of every triple of switches $s1$, $s2$, $s3$ the following clause was added:
     \begin{center}
         \((switch\_behind[s1][s2] \cap switch\_behind[s2][s3]) \implies switch\_behind[s1][s3]\)
     \end{center}
